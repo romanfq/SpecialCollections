@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecialCollections", "SpecialCollections.csproj", "{53292037-8ABE-4B68-8F77-7F6EF345F94A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecialCollections.Tests", "..\SpecialCollections.Tests\SpecialCollections.Tests.csproj", "{682CFD7D-4C47-4EDD-89A9-C1735052463D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{53292037-8ABE-4B68-8F77-7F6EF345F94A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53292037-8ABE-4B68-8F77-7F6EF345F94A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53292037-8ABE-4B68-8F77-7F6EF345F94A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53292037-8ABE-4B68-8F77-7F6EF345F94A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{682CFD7D-4C47-4EDD-89A9-C1735052463D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{682CFD7D-4C47-4EDD-89A9-C1735052463D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{682CFD7D-4C47-4EDD-89A9-C1735052463D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{682CFD7D-4C47-4EDD-89A9-C1735052463D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

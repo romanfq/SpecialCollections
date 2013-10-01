@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecialCollections", "SpecialCollections.csproj", "{53292037-8ABE-4B68-8F77-7F6EF345F94A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecialCollections.Tests", "..\SpecialCollections.Tests\SpecialCollections.Tests.csproj", "{682CFD7D-4C47-4EDD-89A9-C1735052463D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpecialCollections.Tests", "..\tests\SpecialCollections.Tests.csproj", "{682CFD7D-4C47-4EDD-89A9-C1735052463D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -49,7 +49,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SpecialCollections\SpecialCollections.csproj">
+    <ProjectReference Include="..\src\SpecialCollections.csproj">
       <Project>{53292037-8abe-4b68-8f77-7f6ef345f94a}</Project>
       <Name>SpecialCollections</Name>
     </ProjectReference>

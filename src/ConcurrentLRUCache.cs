@@ -120,15 +120,12 @@ namespace SpecialCollections
                         if (_size == _maxSize)
                         {
                             var cursor = _head;
-                            var prev = cursor;
                             while (cursor.Next != null)
                             {
-                                prev = cursor;
                                 cursor = cursor.Next;
                             }
 
-                            cursor.Next = null;
-                            prev.Next = null;
+                            cursor.Previous.Next = null;
                         }
                         else
                         {
@@ -153,7 +150,6 @@ namespace SpecialCollections
 
                     // seek the value, bail out if not found
                     var cursor = _head;
-                    var prev = _head;
                     while (cursor != null)
                     {
                         if (value.Equals(cursor.Value))
@@ -161,7 +157,6 @@ namespace SpecialCollections
                             break;
                         }
 
-                        prev = cursor;
                         cursor = cursor.Next;
                     }
 
@@ -172,7 +167,7 @@ namespace SpecialCollections
 
                     // adjust the entries around the cursor
                     var nextByUsage = cursor.Next;
-                    prev.Next = nextByUsage;
+                    cursor.Previous.Next = nextByUsage;
 
                     // move the cursor to the start of the list
                     if (cursor != _head.Next)
@@ -212,11 +207,13 @@ namespace SpecialCollections
             class LRUEntry
             {
                 private readonly string _name;
+                private LRUEntry _next;
                 public T Value { get; private set; }
 
-                public LRUEntry(T value)
+                public LRUEntry(T value, LRUEntry previous = null)
                 {
                     Value = value;
+                    Previous = previous;
                 }
 
                 public LRUEntry(string name)
@@ -224,7 +221,20 @@ namespace SpecialCollections
                     _name = name;
                 }
 
-                public LRUEntry Next { get; set; }
+                public LRUEntry Next
+                {
+                    get { return _next; }
+                    set
+                    {
+                        _next = value;
+                        if (value != null)
+                        {
+                            value.Previous = this;
+                        }
+                    }
+                }
+
+                public LRUEntry Previous { get; private set; }
 
                 public override string ToString()
                 {

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 namespace SpecialCollections
@@ -78,12 +80,21 @@ namespace SpecialCollections
             private int _size;
 
             private readonly LRUEntry _head;
+            private readonly LRUEntry _tail;
+
             private readonly ReaderWriterLockSlim _syncLock = new ReaderWriterLockSlim();
 
             public LRUList(int maxSize)
             {
+                if (maxSize <= 0)
+                {
+                    throw new ArgumentOutOfRangeException("maxSize", "Must be > 0");
+                }
                 _maxSize = maxSize;
-                _head = new LRUEntry("h");
+                _head = new LRUEntry("h")
+                {
+                    Next = _tail = new LRUEntry("t")
+                };
             }
 
             public int Size
@@ -98,20 +109,11 @@ namespace SpecialCollections
 
                 try
                 {
-                    // invariant: no more than _maxSize elements
                     _syncLock.EnterWriteLock();
 
-                    // seek the value, bail out if found
+                    if (Find(value) != null)
                     {
-                        var cursor = _head;
-                        while (cursor != null)
-                        {
-                            if (value.Equals(cursor.Value))
-                            {
-                                return;
-                            }
-                            cursor = cursor.Next;
-                        }
+                        return;
                     }
 
                     // insert the value, keep invariant _size <= maxSize
@@ -119,13 +121,8 @@ namespace SpecialCollections
                         var newEntry = new LRUEntry(value);
                         if (_size == _maxSize)
                         {
-                            var cursor = _head;
-                            while (cursor.Next != null)
-                            {
-                                cursor = cursor.Next;
-                            }
-
-                            cursor.Previous.Next = null;
+                            Debug.Assert(_tail.Previous != _head);
+                            _tail.Previous.Previous.Next = _tail;
                         }
                         else
                         {
@@ -148,18 +145,8 @@ namespace SpecialCollections
                 {
                     _syncLock.EnterWriteLock();
 
-                    // seek the value, bail out if not found
-                    var cursor = _head;
-                    while (cursor != null)
-                    {
-                        if (value.Equals(cursor.Value))
-                        {
-                            break;
-                        }
-
-                        cursor = cursor.Next;
-                    }
-
+                    // seek the value, raise error if not found
+                    var cursor = Find(value);
                     if (cursor == null)
                     {
                         throw new ArgumentException("Specified value is not present in the list", "value");
@@ -172,9 +159,9 @@ namespace SpecialCollections
                     // move the cursor to the start of the list
                     if (cursor != _head.Next)
                     {
-                        var moreRecentlyUsed = _head.Next;
+                        var mostRU = _head.Next;
                         _head.Next = cursor;
-                        cursor.Next = moreRecentlyUsed;
+                        cursor.Next = mostRU;
                     }
                 }
                 finally
@@ -191,7 +178,7 @@ namespace SpecialCollections
 
                     var cursor = _head.Next;
                     int pos = 0;
-                    while (cursor != null)
+                    while (cursor != _tail)
                     {
                         array[index + pos] = cursor.Value;
                         cursor = cursor.Next;
@@ -202,6 +189,30 @@ namespace SpecialCollections
                 {
                     _syncLock.ExitWriteLock();
                 }
+            }
+
+            private LRUEntry Find(T value)
+            {
+                LRUEntry frontCursor = _head, backCursor = _tail;
+                while (frontCursor != backCursor && backCursor.Next != frontCursor)
+                {
+                    if (Equals(value, frontCursor.Value))
+                    {
+                        return frontCursor;
+                    }
+                    if (Equals(value, backCursor.Value))
+                    {
+                        return backCursor;
+                    }
+                    frontCursor = frontCursor.Next;
+                    backCursor = backCursor.Previous;
+                }
+
+                if (frontCursor == backCursor && Equals(value, frontCursor.Value))
+                {
+                    return frontCursor;
+                }
+                return null;
             }
 
             class LRUEntry

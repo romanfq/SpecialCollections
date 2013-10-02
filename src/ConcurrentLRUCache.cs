@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
@@ -15,8 +14,8 @@ namespace SpecialCollections
     {
         private readonly int _cacheLineSize;
 
-        private readonly ConcurrentDictionary<TKey, LRUList<TValue>> _entries
-            = new ConcurrentDictionary<TKey, LRUList<TValue>>();
+        private readonly ConcurrentDictionary<TKey, LRUList> _entries
+            = new ConcurrentDictionary<TKey, LRUList>();
 
         public ConcurrentLRUCache(int cacheLineSize)
         {
@@ -33,7 +32,7 @@ namespace SpecialCollections
         public void Add(TKey key, TValue value)
         {
             _entries
-                .GetOrAdd(key, k => new LRUList<TValue>(_cacheLineSize))
+                .GetOrAdd(key, k => new LRUList(_cacheLineSize))
                 .Add(value);
         }
 
@@ -42,7 +41,7 @@ namespace SpecialCollections
         /// </summary>
         public TValue[] Get(TKey key)
         {
-            LRUList<TValue> list;
+            LRUList list;
             if (!_entries.TryGetValue(key, out list))
             {
                 return null;
@@ -56,25 +55,21 @@ namespace SpecialCollections
         /// <summary>
         /// Increments usage of a set of items in the cache line associated with the key
         /// </summary>
-        public void Use(TKey key, params TValue[] usedValues)
+        public void Use(TKey key, params TValue[] values)
         {
-            if (usedValues == null)
-                throw new ArgumentNullException("usedValues");
+            if (values == null)
+                throw new ArgumentNullException("values");
 
-            LRUList<TValue> list;
+            LRUList list;
             if (!_entries.TryGetValue(key, out list))
             {
                 throw new ArgumentException("There is are no values cached for that key", "key");
             }
 
-            for (var i = usedValues.Length - 1; i >= 0; i--)
-            {
-                var value = usedValues[i];
-                list.Use(value);
-            }
+            list.Use(values);
         }
 
-        class LRUList<T> where T : class, IEquatable<T>
+        class LRUList
         {
             private readonly int _maxSize;
             private int _size;
@@ -102,7 +97,7 @@ namespace SpecialCollections
                 get { return _size; }
             }
 
-            public void Add(T value)
+            public void Add(TValue value)
             {
                 if (value == null)
                     throw new ArgumentNullException("value");
@@ -139,45 +134,14 @@ namespace SpecialCollections
                 }
             }
 
-            public void Use(T value)
-            {
-                try
-                {
-                    _syncLock.EnterWriteLock();
-
-                    // seek the value, raise error if not found
-                    var cursor = Find(value);
-                    if (cursor == null)
-                    {
-                        throw new ArgumentException("Specified value is not present in the list", "value");
-                    }
-
-                    // adjust the entries around the cursor
-                    var nextByUsage = cursor.Next;
-                    cursor.Previous.Next = nextByUsage;
-
-                    // move the cursor to the start of the list
-                    if (cursor != _head.Next)
-                    {
-                        var mostRU = _head.Next;
-                        _head.Next = cursor;
-                        cursor.Next = mostRU;
-                    }
-                }
-                finally
-                {
-                    _syncLock.ExitWriteLock();
-                }
-            }
-
-            public void CopyTo(T[] array, int index)
+            public void CopyTo(TValue[] array, int index)
             {
                 try
                 {
                     _syncLock.EnterWriteLock();
 
                     var cursor = _head.Next;
-                    int pos = 0;
+                    var pos = 0;
                     while (cursor != _tail)
                     {
                         array[index + pos] = cursor.Value;
@@ -191,7 +155,45 @@ namespace SpecialCollections
                 }
             }
 
-            private LRUEntry Find(T value)
+            public void Use(TValue[] values)
+            {
+                try
+                {
+                    _syncLock.EnterWriteLock();
+                    for (int i = values.Length - 1; i >= 0; i--)
+                    {
+                        Use(values[i]);
+                    }
+                }
+                finally
+                {
+                    _syncLock.ExitWriteLock();
+                }
+            }
+
+            private void Use(TValue value)
+            {
+                // seek the value, raise error if not found
+                var cursor = Find(value);
+                if (cursor == null)
+                {
+                    throw new ArgumentException("Specified value is not present in the list", "value");
+                }
+
+                // adjust the entries around the cursor
+                var nextByUsage = cursor.Next;
+                cursor.Previous.Next = nextByUsage;
+
+                // move the cursor to the start of the list
+                if (cursor != _head.Next)
+                {
+                    var mostRU = _head.Next;
+                    _head.Next = cursor;
+                    cursor.Next = mostRU;
+                }
+            }
+
+            private LRUEntry Find(TValue value)
             {
                 LRUEntry frontCursor = _head, backCursor = _tail;
                 while (frontCursor != backCursor && backCursor.Next != frontCursor)
@@ -215,23 +217,22 @@ namespace SpecialCollections
                 return null;
             }
 
-            class LRUEntry
+            private class LRUEntry
             {
                 private readonly string _name;
                 private LRUEntry _next;
-                public T Value { get; private set; }
 
-                public LRUEntry(T value, LRUEntry previous = null)
+                public LRUEntry(TValue value)
                 {
                     Value = value;
-                    Previous = previous;
                 }
 
-                public LRUEntry(string name)
+                internal LRUEntry(string name)
                 {
                     _name = name;
                 }
 
+                public TValue Value { get; private set; }
                 public LRUEntry Next
                 {
                     get { return _next; }
